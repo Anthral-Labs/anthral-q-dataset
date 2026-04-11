@@ -11,3 +11,4 @@ corpus/
 *.csv
 *.jsonl
 *.log
+research/output/
