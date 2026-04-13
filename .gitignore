@@ -6,6 +6,9 @@ __pycache__/
 .ipynb_checkpoints/
 .claude/
 data/
+!data/questions/eval_set.json
+!data/questions/eval_set_binary.json
+!data/questions/eval_set_multi.json
 corpus/
 *.parquet
 *.csv
