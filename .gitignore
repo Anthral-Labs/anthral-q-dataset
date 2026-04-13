@@ -1,17 +1,25 @@
+# Python
 __pycache__/
 *.py[cod]
 .venv/
 .env
+
+# OS
 .DS_Store
+
+# IDE / tools
 .ipynb_checkpoints/
 .claude/
-data/
-!data/questions/eval_set.json
-!data/questions/eval_set_binary.json
-!data/questions/eval_set_multi.json
+*.log
+
+# Large raw data (never commit)
+dataset/raw/
 corpus/
 *.parquet
 *.csv
-*.jsonl
-*.log
-research/output/
+
+# Track everything else explicitly
+# dataset/questions/ - eval sets (tracked)
+# experiments/ - all experiment outputs (tracked)
+# analysis/ - analysis outputs (tracked)
+# docs/ - documentation (tracked)
