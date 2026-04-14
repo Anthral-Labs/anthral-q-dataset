@@ -15,8 +15,10 @@ __pycache__/
 # Large raw data (never commit)
 dataset/raw/
 corpus/
+data/
 *.parquet
 *.csv
+*.jsonl
 
 # Track everything else explicitly
 # dataset/questions/ - eval sets (tracked)
