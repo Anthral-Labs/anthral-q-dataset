@@ -159,9 +159,10 @@ a JSON object:
 
 The 320-question subset on which we report our primary results is the
 intersection `lossfunk_category ∈ {POLITICS, GEOPOLITICS}` within the binary
-set (207 politics + 113 geopolitics = 320). 13 questions are excluded from
-evaluation per `analysis/excluded_questions.json`; the remaining 252 form
-the treatment set for our Brier-delta statistics.
+set (207 politics + 113 geopolitics = 320). 13 questions are held out from
+the treatment statistics (response truncation and malformed retrieval
+conditions); the remaining 252 form the treatment set for our Brier-delta
+statistics.
 
 ---
 
@@ -227,8 +228,6 @@ import json
 eval_set = json.load(open("dataset/questions/eval_set_binary.json"))
 test = [r for r in eval_set
         if r["lossfunk_category"] in ("POLITICS", "GEOPOLITICS")]
-
-# (excluded questions per analysis/excluded_questions.json)
 
 for q in test:
     title = q["title"]
