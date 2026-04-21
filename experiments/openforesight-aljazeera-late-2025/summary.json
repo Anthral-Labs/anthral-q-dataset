@@ -6,9 +6,18 @@
   "n_questions": 491,
   "judge_model": "gpt-4o",
   "scoring": {
-    "formula": "signed_reward = +1-(1-p)^2 if judge=1 else -p^2; -0.25 for unparseable",
-    "range": [-1, 1],
-    "source": "OpenForecaster (Chandak et al., 2025)"
+    "signed_reward": {
+      "formula": "signed_reward = +1-(1-p)^2 if judge=1 else -p^2; -0.25 for unparseable",
+      "range": [-1, 1],
+      "orientation": "higher is better",
+      "source": "OpenForecaster (Chandak et al., 2025)"
+    },
+    "brier_loss": {
+      "formula": "brier = (p - y)^2; 0.25 for unparseable (equivalent to p=0.5)",
+      "range": [0, 1],
+      "orientation": "lower is better",
+      "note": "Uses the same extracted probability and judge correctness as signed reward"
+    }
   },
   "runs": {
     "A_no_context": {
@@ -17,7 +26,8 @@
       "accuracy": 0.0916,
       "null_count": 30,
       "null_rate": 0.0611,
-      "mean_signed_reward": -0.1554
+      "mean_signed_reward": -0.1554,
+      "brier_loss": 0.2470
     },
     "B_their_retrieval": {
       "description": "OpenForecaster's published 'prompt' field verbatim (their retrieval, loose protocol)",
@@ -25,7 +35,8 @@
       "accuracy": 0.1303,
       "null_count": 12,
       "null_rate": 0.0244,
-      "mean_signed_reward": -0.2561
+      "mean_signed_reward": -0.2561,
+      "brier_loss": 0.3865
     },
     "C_loose_our_retrieval": {
       "description": "Our GDELT corpus via union retrieval, articles <= resolution_date",
@@ -33,7 +44,8 @@
       "accuracy": 0.2709,
       "null_count": 7,
       "null_rate": 0.0143,
-      "mean_signed_reward": -0.0869
+      "mean_signed_reward": -0.0869,
+      "brier_loss": 0.3578
     },
     "C_strict_our_retrieval": {
       "description": "Our GDELT corpus via union retrieval, articles <= question_start_date (strict forecasting filter)",
@@ -41,7 +53,8 @@
       "accuracy": 0.1752,
       "null_count": 3,
       "null_rate": 0.0061,
-      "mean_signed_reward": -0.1733
+      "mean_signed_reward": -0.1733,
+      "brier_loss": 0.3484
     }
   },
   "key_deltas": {

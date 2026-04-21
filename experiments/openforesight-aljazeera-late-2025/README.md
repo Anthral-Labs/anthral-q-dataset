@@ -28,22 +28,36 @@ Only the retrieval source and leakage filter differ; everything else is identica
 
 ## Results
 
-| Run | Correct | Accuracy | Null (token-cap) | **Mean signed reward** |
-|---|---:|---:|---:|---:|
-| A — no context | 45 / 491 | 9.2% | 6.1% (30) | **−0.1554** |
-| B — their retrieval | 64 / 491 | 13.0% | 2.4% (12) | **−0.2561** |
-| **C-loose** — our retrieval, loose | **133 / 491** | **27.1%** | 1.4% (7) | **−0.0869** |
-| C-strict — our retrieval, strict | 86 / 491 | 17.5% | 0.6% (3) | **−0.1733** |
+| Run | Correct | Accuracy | Null (token-cap) | **Signed reward** (higher better, range [−1, +1]) | **Brier loss** (lower better, range [0, 1]) |
+|---|---:|---:|---:|---:|---:|
+| A — no context | 45 / 491 | 9.2% | 6.1% (30) | −0.1554 | **0.2470** ← best |
+| B — their retrieval | 64 / 491 | 13.0% | 2.4% (12) | −0.2561 | 0.3865 |
+| **C-loose** — our retrieval, loose | **133 / 491** | **27.1%** | 1.4% (7) | **−0.0869** ← best | 0.3578 |
+| C-strict — our retrieval, strict | 86 / 491 | 17.5% | 0.6% (3) | −0.1733 | 0.3484 |
 
-Range of mean signed reward is `[−1, +1]`. Zero is neutral; negative means systematically-wrong-with-confidence dominates correctly-reasoned-with-confidence.
+Both metrics use the same extracted probabilities. They differ in sign and in how they penalize confidence:
+
+- **Signed reward** (OpenForecaster's metric, range [−1, +1], higher better): `+1−(1−p)²` if correct else `−p²`. Gives a `+1` baseline per correct answer on top of a `−(1−p)²` hedge-penalty. Rewards getting more answers right even at moderate confidence.
+- **Brier loss** (standard Brier, range [0, 1], lower better): `(p − y)²`. Pure calibration error. Penalizes any confidence on wrong answers as much as missed confidence on correct ones.
+
+Unparseable / token-cap outputs: signed reward uses OpenForecaster's soft-Brier fallback of `−0.25`; Brier loss uses `0.25` (equivalent to predicting p=0.5 on a binary outcome, which gives squared error `0.25` either way).
+
+The rankings differ between the two metrics:
+
+| Ranking | Signed reward (higher better) | Brier loss (lower better) |
+|---|---|---|
+| 1 (best) | C-loose | A (no context) |
+| 2 | A | C-strict |
+| 3 | C-strict | C-loose |
+| 4 (worst) | B | B |
 
 ## Findings
 
-1. **Our GDELT corpus more than doubles the accuracy of OpenForecaster's retrieval** (B vs C-loose, matched protocol): 13.0% → 27.1%, mean reward −0.256 → −0.087. The only variable that changed is the article corpus — our 31.5M-article GDELT pool has meaningfully better coverage of Sept–Dec 2025 events than whatever OpenForecaster's retrieval pipeline uses.
+1. **Our GDELT corpus more than doubles the accuracy of OpenForecaster's retrieval** (B vs C-loose, matched protocol): 13.0% → 27.1%, signed reward −0.256 → −0.087, Brier loss 0.387 → 0.358. The only variable that changed is the article corpus — our 31.5M-article GDELT pool has meaningfully better coverage of Sept–Dec 2025 events than whatever OpenForecaster's retrieval pipeline uses.
 
-2. **Leakage quantification**: switching from the loose filter (`article_date ≤ resolution_date`) to our strict creation-date filter (`article_date ≤ question_start_date`) drops accuracy by 9.6 pp and mean reward by 0.086. Approximately half of retrieval's apparent lift on this benchmark comes from articles published between question creation and resolution. This is the Paleka-et-al.-style leakage-premium effect, measured directly on the OpenForesight family for the first time we are aware of.
+2. **Leakage quantification**: switching from the loose filter (`article_date ≤ resolution_date`) to our strict creation-date filter (`article_date ≤ question_start_date`) drops accuracy by 9.6 pp and signed reward by 0.086. Approximately half of retrieval's apparent lift on this benchmark comes from articles published between question creation and resolution. This is the Paleka-et-al.-style leakage-premium effect, measured directly on the OpenForesight family for the first time we are aware of.
 
-3. **Calibration ceiling for untrained base models**: even with C-loose's best-in-class retrieval, mean signed reward is `−0.087`. Base Qwen3.5-27B is systematically overconfident on the ~73% of questions it still gets wrong. Closing this gap requires training, not better retrieval — consistent with OpenForecaster's thesis that a combined accuracy-plus-Brier reward function (GRPO, OpenForecaster-8B recipe) is the calibration lever.
+3. **Calibration ceiling for untrained base models + confidence-inflation effect**: even with C-loose's best-in-class retrieval, signed reward is `−0.087` and Brier loss is `0.358`. Base Qwen3.5-27B is systematically overconfident on the ~73% of questions it still gets wrong. Most revealing: on *Brier loss specifically*, the no-context Run A is actually the best-calibrated (0.247), and *adding retrieval makes Brier worse across the board* because retrieval inflates the model's stated confidence on wrong answers faster than it improves correctness. Closing this gap requires training, not better retrieval — consistent with OpenForecaster's thesis that a combined accuracy-plus-Brier reward function (GRPO, OpenForecaster-8B recipe) is the calibration lever.
 
 ## Failure-mode texture (qualitative)
 
