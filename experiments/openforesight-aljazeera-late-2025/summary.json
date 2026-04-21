@@ -1,0 +1,67 @@
+{
+  "experiment": "openforesight-aljazeera-late-2025",
+  "date": "2026-04-21",
+  "model": "Qwen/Qwen3.5-27B",
+  "dataset": "nikhilchandak/OpenForesight:aljazeeraLate2025",
+  "n_questions": 491,
+  "judge_model": "gpt-4o",
+  "scoring": {
+    "formula": "signed_reward = +1-(1-p)^2 if judge=1 else -p^2; -0.25 for unparseable",
+    "range": [-1, 1],
+    "source": "OpenForecaster (Chandak et al., 2025)"
+  },
+  "runs": {
+    "A_no_context": {
+      "description": "prompt_without_retrieval field verbatim",
+      "correct": 45,
+      "accuracy": 0.0916,
+      "null_count": 30,
+      "null_rate": 0.0611,
+      "mean_signed_reward": -0.1554
+    },
+    "B_their_retrieval": {
+      "description": "OpenForecaster's published 'prompt' field verbatim (their retrieval, loose protocol)",
+      "correct": 64,
+      "accuracy": 0.1303,
+      "null_count": 12,
+      "null_rate": 0.0244,
+      "mean_signed_reward": -0.2561
+    },
+    "C_loose_our_retrieval": {
+      "description": "Our GDELT corpus via union retrieval, articles <= resolution_date",
+      "correct": 133,
+      "accuracy": 0.2709,
+      "null_count": 7,
+      "null_rate": 0.0143,
+      "mean_signed_reward": -0.0869
+    },
+    "C_strict_our_retrieval": {
+      "description": "Our GDELT corpus via union retrieval, articles <= question_start_date (strict forecasting filter)",
+      "correct": 86,
+      "accuracy": 0.1752,
+      "null_count": 3,
+      "null_rate": 0.0061,
+      "mean_signed_reward": -0.1733
+    }
+  },
+  "key_deltas": {
+    "our_corpus_vs_their_corpus_same_protocol": {
+      "accuracy_pp": 14.07,
+      "mean_reward_delta": 0.1692,
+      "runs_compared": "C_loose minus B_their_retrieval"
+    },
+    "leakage_effect_same_corpus": {
+      "accuracy_pp": -9.57,
+      "mean_reward_delta": -0.0864,
+      "runs_compared": "C_strict minus C_loose",
+      "interpretation": "Articles published between question creation and resolution account for roughly half of apparent retrieval lift on this benchmark."
+    },
+    "retrieval_vs_no_context_at_matched_protocol": {
+      "accuracy_pp_their_retrieval": 3.87,
+      "accuracy_pp_our_retrieval": 17.93,
+      "mean_reward_delta_their_retrieval": -0.1007,
+      "mean_reward_delta_our_retrieval": 0.0685,
+      "interpretation": "Their retrieval improves accuracy but hurts mean reward (confidence inflation without correctness gain); our retrieval improves both."
+    }
+  }
+}

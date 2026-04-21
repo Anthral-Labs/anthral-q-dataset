@@ -20,6 +20,10 @@ data/
 *.csv
 *.jsonl
 
+# Re-include tracked experiment + analysis outputs
+!experiments/**/*.jsonl
+!analysis/**/*.jsonl
+
 # Track everything else explicitly
 # dataset/questions/ - eval sets (tracked)
 # experiments/ - all experiment outputs (tracked)
