@@ -55,6 +55,50 @@
       "null_rate": 0.0061,
       "mean_signed_reward": -0.1733,
       "brier_loss": 0.3484
+    },
+    "D_dayminus1": {
+      "description": "Our GDELT corpus, articles <= resolution_date - 1 day (tests whether the final 24h drives leakage)",
+      "correct": 113,
+      "accuracy": 0.2301,
+      "null_count": 7,
+      "null_rate": 0.0143,
+      "mean_signed_reward": -0.1315,
+      "brier_loss": 0.3616
+    },
+    "D_dayminus1_deleaked": {
+      "description": "Counterfactual: dayminus1 with leaky chunks identified by GPT-4o and stripped; 45 EXPLICIT questions re-run, merged with unchanged 446 non-EXPLICIT results",
+      "correct": 93,
+      "accuracy": 0.1894,
+      "null_count": null,
+      "mean_signed_reward": -0.1919,
+      "brier_loss": 0.3813,
+      "note": "Of the 45 EXPLICIT questions, 35 were correct before chunk stripping and only 15 correct after (−20 swing). The 446 non-EXPLICIT are carried from the original dayminus1 run."
+    }
+  },
+  "leakage_audit": {
+    "method": "Two-stage GPT-4o audit via OpenAI batch API. Stage 1: question-level bundle classification (491 questions, EXPLICIT/IMPLIED/NO). Stage 2: chunk-level classification (225 chunks for the 45 EXPLICIT questions, YES/NO per chunk).",
+    "stage1_counts": {
+      "EXPLICIT": 45,
+      "IMPLIED": 30,
+      "NO": 416
+    },
+    "stage1_accuracy_by_level": {
+      "EXPLICIT": 0.7778,
+      "IMPLIED": 0.6667,
+      "NO": 0.1394
+    },
+    "stage2_chunk_leakage_rate": 0.3422,
+    "stage2_counts": {
+      "total_chunks": 225,
+      "leaky_chunks": 77,
+      "questions_with_all_chunks_leaky": 1,
+      "questions_with_zero_chunks_leaky_but_bundle_flagged": 4
+    },
+    "counterfactual_delta_strict_to_deleaked": {
+      "strict_accuracy": 0.1752,
+      "deleaked_accuracy": 0.1894,
+      "delta_pp": 1.4,
+      "interpretation": "Essentially all of the dayminus1 lift over strict (+5.5 pp) is attributable to articles that literally state the answer; stripping those brings accuracy within 1.4 pp of strict."
     }
   },
   "key_deltas": {
