@@ -19,6 +19,16 @@
       "note": "Uses the same extracted probability and judge correctness as signed reward"
     }
   },
+  "models": {
+    "Qwen3.5-27B": {
+      "description": "Base untrained model, bf16 on single A100 via vLLM",
+      "source": "Qwen/Qwen3.5-27B"
+    },
+    "OpenForecaster-8B": {
+      "description": "Chandak et al. 2025 — Qwen3-8B fine-tuned with GRPO + combined accuracy + Brier reward",
+      "source": "nikhilchandak/OpenForecaster-8B"
+    }
+  },
   "runs": {
     "A_no_context": {
       "description": "prompt_without_retrieval field verbatim",
@@ -67,13 +77,50 @@
     },
     "D_dayminus1_deleaked": {
       "description": "Counterfactual: dayminus1 with leaky chunks identified by GPT-4o and stripped; 45 EXPLICIT questions re-run, merged with unchanged 446 non-EXPLICIT results",
+      "model": "Qwen3.5-27B",
       "correct": 93,
       "accuracy": 0.1894,
       "null_count": null,
       "mean_signed_reward": -0.1919,
       "brier_loss": 0.3813,
       "note": "Of the 45 EXPLICIT questions, 35 were correct before chunk stripping and only 15 correct after (−20 swing). The 446 non-EXPLICIT are carried from the original dayminus1 run."
+    },
+    "OF_A_no_context": {
+      "description": "OpenForecaster-8B, prompt_without_retrieval",
+      "model": "OpenForecaster-8B",
+      "correct": 41,
+      "accuracy": 0.0835,
+      "null_count": 3,
+      "null_rate": 0.0061,
+      "mean_signed_reward": -0.0395,
+      "brier_loss": 0.1230
+    },
+    "OF_C_loose_our_retrieval": {
+      "description": "OpenForecaster-8B with our GDELT retrieval, articles <= resolution_date",
+      "model": "OpenForecaster-8B",
+      "correct": 109,
+      "accuracy": 0.2220,
+      "null_count": 5,
+      "null_rate": 0.0102,
+      "mean_signed_reward": 0.0571,
+      "brier_loss": 0.1649
+    },
+    "OF_C_strict_our_retrieval": {
+      "description": "OpenForecaster-8B with our GDELT retrieval, articles <= question_start_date",
+      "model": "OpenForecaster-8B",
+      "correct": 79,
+      "accuracy": 0.1609,
+      "null_count": 2,
+      "null_rate": 0.0041,
+      "mean_signed_reward": 0.0144,
+      "brier_loss": 0.1465
     }
+  },
+  "cross_model_comparison": {
+    "base_27B_best_accuracy": {"run": "C_loose", "accuracy": 0.2709, "signed_reward": -0.0869, "brier_loss": 0.3578},
+    "trained_8B_with_our_retrieval_loose": {"run": "OF_C_loose", "accuracy": 0.2220, "signed_reward": 0.0571, "brier_loss": 0.1649},
+    "trained_8B_with_our_retrieval_strict": {"run": "OF_C_strict", "accuracy": 0.1609, "signed_reward": 0.0144, "brier_loss": 0.1465},
+    "interpretation": "Bigger untrained model wins accuracy (27.1% vs 22.2% loose); calibration-trained smaller model wins signed reward and Brier loss. Trained 8B achieves first positive signed reward we can find on this benchmark, and remains positive even under our strict leakage-defense filter."
   },
   "leakage_audit": {
     "method": "Two-stage GPT-4o audit via OpenAI batch API. Stage 1: question-level bundle classification (491 questions, EXPLICIT/IMPLIED/NO). Stage 2: chunk-level classification (225 chunks for the 45 EXPLICIT questions, YES/NO per chunk).",

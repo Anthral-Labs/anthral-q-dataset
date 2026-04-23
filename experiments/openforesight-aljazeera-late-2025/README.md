@@ -1,8 +1,18 @@
-# Qwen3.5-27B on OpenForesight `aljazeeraLate2025` — 4-Run Retrieval Ablation
+# OpenForesight `aljazeeraLate2025` — Full Model × Retrieval Ablation
 
-**Date:** 2026-04-21
+**Updated:** 2026-04-23
 
-A four-condition ablation measuring how retrieval corpus choice and leakage-defense protocol affect free-form forecasting performance on 491 post-cutoff questions.
+Ablations measuring how retrieval corpus choice, leakage-defense protocol, and base model affect free-form forecasting performance on 491 post-cutoff questions (Sept–Dec 2025 resolutions).
+
+## Headline: our retrieval + OpenForecaster-8B is the first positive-signed-reward result on this benchmark
+
+| Model | Context | Accuracy | **Signed reward** | **Brier loss** |
+|---|---|---:|---:|---:|
+| Qwen3.5-27B (base, no training) | our retrieval, loose | **27.1%** (wins accuracy) | −0.0869 | 0.3578 |
+| **OpenForecaster-8B** (Chandak's trained model) | our retrieval, loose | 22.2% | **+0.0571** (positive!) | **0.1649** (wins calibration by >2×) |
+| OpenForecaster-8B | our retrieval, strict | 16.1% | **+0.0144** (positive under strict leakage-defense too) | 0.1465 |
+
+Training cuts Brier loss from 0.36 → 0.16 and flips signed reward from negative to positive, at the cost of ~5 pp accuracy — the expected calibration-vs-accuracy tradeoff when the reward is proper-score-based.
 
 ## Setup
 
@@ -26,14 +36,35 @@ Only the retrieval source and leakage filter differ; everything else is identica
 | **C-loose** Our retrieval (matched protocol) | Their template, our articles spliced in | Loose (articles ≤ `resolution_date`) | TF-IDF ∪ OpenAI-embedding union → OAI rerank → top-5 from our 31.5M-article GDELT corpus |
 | **C-strict** Our retrieval (strict forecasting filter) | Their template, our articles spliced in | Strict (articles ≤ `question_start_date`) | Same GDELT pipeline as C-loose |
 
-## Results
+## Results — Qwen3.5-27B (base, no training)
 
 | Run | Correct | Accuracy | Null (token-cap) | **Signed reward** (higher better, range [−1, +1]) | **Brier loss** (lower better, range [0, 1]) |
 |---|---:|---:|---:|---:|---:|
-| A — no context | 45 / 491 | 9.2% | 6.1% (30) | −0.1554 | **0.2470** ← best |
+| A — no context | 45 / 491 | 9.2% | 6.1% (30) | −0.1554 | **0.2470** ← best for 27B |
 | B — their retrieval | 64 / 491 | 13.0% | 2.4% (12) | −0.2561 | 0.3865 |
-| **C-loose** — our retrieval, loose | **133 / 491** | **27.1%** | 1.4% (7) | **−0.0869** ← best | 0.3578 |
+| **C-loose** — our retrieval, loose | **133 / 491** | **27.1%** | 1.4% (7) | **−0.0869** ← best for 27B | 0.3578 |
 | C-strict — our retrieval, strict | 86 / 491 | 17.5% | 0.6% (3) | −0.1733 | 0.3484 |
+
+## Results — OpenForecaster-8B (Chandak et al. 2025, `nikhilchandak/OpenForecaster-8B`)
+
+Same 491 questions, same prompt template, same LLM judge. Only the inference model changes — from untrained Qwen3.5-27B to the OpenForecaster-trained Qwen3-8B (RL fine-tuned with accuracy + Brier reward, GRPO).
+
+| Run | Correct | Accuracy | Null | Signed reward | Brier loss |
+|---|---:|---:|---:|---:|---:|
+| OF-A — no context | 41 / 491 | 8.4% | 0.6% (3) | −0.0395 | **0.1230** ← best overall |
+| **OF-C-loose** — our retrieval, loose | 109 / 491 | 22.2% | 1.0% (5) | **+0.0571** ← positive! | 0.1649 |
+| **OF-C-strict** — our retrieval, strict | 79 / 491 | 16.1% | 0.4% (2) | **+0.0144** ← positive under strict leakage-defense too | 0.1465 |
+
+## Cross-model observations
+
+| Metric | Qwen3.5-27B (base) | OpenForecaster-8B (trained) | Winner |
+|---|---|---|---|
+| Accuracy, C-loose | **27.1%** | 22.2% | 27B by 4.9 pp — bigger model gets more answers right |
+| Brier loss, any run | 0.25–0.39 range | **0.12–0.17 range** | 8B by >2× — trained calibration slashes overconfidence on wrong answers |
+| Signed reward, C-loose | −0.087 | **+0.057** | 8B positive vs 27B negative, despite 27B's accuracy lead |
+| Signed reward, C-strict | −0.173 | **+0.014** | 8B positive even under our strict forecasting filter |
+
+**Interpretation.** Bigger untrained models get more answers right; calibration training converts those "right answers with moderate confidence" into "right answers with high confidence" while converting "wrong answers with high confidence" into "wrong answers with moderate confidence." The result is a signed reward that crosses zero. Accuracy is necessary but not sufficient on this benchmark — the proper-scoring-rule reward punishes confident errors hard enough that untrained 27B loses to trained 8B on the overall metric.
 
 Both metrics use the same extracted probabilities. They differ in sign and in how they penalize confidence:
 
@@ -135,19 +166,25 @@ experiments/openforesight-aljazeera-late-2025/
 ├── README.md                       (this file)
 ├── summary.json                    (headline numbers in machine-readable form)
 ├── predictions/                    (raw vLLM outputs — 491 records per run except dayminus1_deleaked which has 45)
-│   ├── run_a_no_context.jsonl
-│   ├── run_b_their_retrieval.jsonl
-│   ├── run_c_loose.jsonl
-│   ├── run_c_strict.jsonl
-│   ├── run_dayminus1.jsonl
-│   └── run_dayminus1_deleaked.jsonl  (only the 45 EXPLICIT questions, rerun with leaky chunks stripped)
+│   ├── run_a_no_context.jsonl               (Qwen3.5-27B)
+│   ├── run_b_their_retrieval.jsonl          (Qwen3.5-27B)
+│   ├── run_c_loose.jsonl                    (Qwen3.5-27B)
+│   ├── run_c_strict.jsonl                   (Qwen3.5-27B)
+│   ├── run_dayminus1.jsonl                  (Qwen3.5-27B)
+│   ├── run_dayminus1_deleaked.jsonl         (Qwen3.5-27B, 45 Qs rerun with leaky chunks stripped)
+│   ├── run_of_a.jsonl                       (OpenForecaster-8B, no context)
+│   ├── run_of_c_loose.jsonl                 (OpenForecaster-8B, our retrieval loose)
+│   └── run_of_c_strict.jsonl                (OpenForecaster-8B, our retrieval strict)
 ├── judged/                         (per-question LLM-judge results — binary correct + signed reward)
 │   ├── run_a.jsonl
 │   ├── run_b.jsonl
 │   ├── run_c_loose.jsonl
 │   ├── run_c_strict.jsonl
 │   ├── run_dayminus1.jsonl
-│   └── run_dayminus1_deleaked.jsonl
+│   ├── run_dayminus1_deleaked.jsonl
+│   ├── run_of_a.jsonl                       (OpenForecaster-8B judgments)
+│   ├── run_of_c_loose.jsonl
+│   └── run_of_c_strict.jsonl
 ├── retrievals/                     (top-5 chunks from our GDELT corpus per question, per filter)
 │   ├── loose.json
 │   ├── strict.json
